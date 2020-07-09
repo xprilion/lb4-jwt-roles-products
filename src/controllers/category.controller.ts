@@ -1,4 +1,5 @@
 import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 import {
   Count,
   CountSchema,
@@ -8,17 +9,19 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
 } from '@loopback/rest';
 import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
+import {basicAuthorization} from '../services/basic.authorization';
+import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
 
 @authenticate('jwt')
 export class CategoryController {
@@ -27,7 +30,9 @@ export class CategoryController {
     public categoryRepository: CategoryRepository,
   ) {}
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @post('/categories', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Category model instance',
@@ -51,7 +56,9 @@ export class CategoryController {
     return this.categoryRepository.create(category);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/categories/count', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Category model count',
@@ -63,7 +70,9 @@ export class CategoryController {
     return this.categoryRepository.count(where);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/categories', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Array of Category model instances',
@@ -81,10 +90,14 @@ export class CategoryController {
   async find(
     @param.filter(Category) filter?: Filter<Category>,
   ): Promise<Category[]> {
-    return this.categoryRepository.find(filter);
+    const res = this.categoryRepository.find(filter);
+    console.log(res);
+    return res;
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @patch('/categories', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Category PATCH success count',
@@ -106,7 +119,9 @@ export class CategoryController {
     return this.categoryRepository.updateAll(category, where);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/categories/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Category model instance',
@@ -119,14 +134,16 @@ export class CategoryController {
     },
   })
   async findById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @param.filter(Category, {exclude: 'where'})
     filter?: FilterExcludingWhere<Category>,
   ): Promise<Category> {
     return this.categoryRepository.findById(id, filter);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @patch('/categories/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Category PATCH success',
@@ -134,7 +151,7 @@ export class CategoryController {
     },
   })
   async updateById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody({
       content: {
         'application/json': {
@@ -147,7 +164,9 @@ export class CategoryController {
     await this.categoryRepository.updateById(id, category);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @put('/categories/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Category PUT success',
@@ -155,20 +174,22 @@ export class CategoryController {
     },
   })
   async replaceById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody() category: Category,
   ): Promise<void> {
     await this.categoryRepository.replaceById(id, category);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @del('/categories/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Category DELETE success',
       },
     },
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(@param.path.number('id') id: string): Promise<void> {
     await this.categoryRepository.deleteById(id);
   }
 }

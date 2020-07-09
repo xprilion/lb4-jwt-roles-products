@@ -1,5 +1,3 @@
-// Copyright IBM Corp. 2020. All Rights Reserved.
-// Node module: loopback4-example-shopping
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
@@ -20,12 +18,8 @@ export async function basicAuthorization(
   // No access if authorization details are missing
   let currentUser: UserProfile;
   if (authorizationCtx.principals.length > 0) {
-    const user = _.pick(authorizationCtx.principals[0], [
-      'id',
-      'name',
-      'roles',
-    ]);
-    currentUser = {[securityId]: user.id, name: user.name, roles: user.roles};
+    const user = _.pick(authorizationCtx.principals[0], ['id', 'name', 'role']);
+    currentUser = {[securityId]: user.id, name: user.name, role: user.role};
   } else {
     return AuthorizationDecision.DENY;
   }
@@ -59,11 +53,6 @@ export async function basicAuthorization(
     return AuthorizationDecision.ALLOW;
   }
 
-  /**
-   * Allow access only to model owners, using route as source of truth
-   *
-   * eg. @post('/users/{userId}/orders', ...) returns `userId` as args[0]
-   */
   if (currentUser[securityId] === authorizationCtx.invocationContext.args[0]) {
     return AuthorizationDecision.ALLOW;
   }

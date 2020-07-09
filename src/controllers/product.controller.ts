@@ -1,4 +1,5 @@
 import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 import {
   Count,
   CountSchema,
@@ -8,17 +9,19 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
 } from '@loopback/rest';
 import {Product} from '../models';
 import {ProductRepository} from '../repositories';
+import {basicAuthorization} from '../services/basic.authorization';
+import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
 
 @authenticate('jwt')
 export class ProductController {
@@ -27,7 +30,9 @@ export class ProductController {
     public productRepository: ProductRepository,
   ) {}
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @post('/products', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Product model instance',
@@ -51,7 +56,9 @@ export class ProductController {
     return this.productRepository.create(product);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/products/count', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Product model count',
@@ -63,7 +70,9 @@ export class ProductController {
     return this.productRepository.count(where);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/products', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Array of Product model instances',
@@ -84,7 +93,9 @@ export class ProductController {
     return this.productRepository.find(filter);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @patch('/products', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Product PATCH success count',
@@ -106,7 +117,9 @@ export class ProductController {
     return this.productRepository.updateAll(product, where);
   }
 
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/products/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Product model instance',
@@ -119,14 +132,16 @@ export class ProductController {
     },
   })
   async findById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @param.filter(Product, {exclude: 'where'})
     filter?: FilterExcludingWhere<Product>,
   ): Promise<Product> {
     return this.productRepository.findById(id, filter);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @patch('/products/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Product PATCH success',
@@ -134,7 +149,7 @@ export class ProductController {
     },
   })
   async updateById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody({
       content: {
         'application/json': {
@@ -147,7 +162,9 @@ export class ProductController {
     await this.productRepository.updateById(id, product);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @put('/products/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Product PUT success',
@@ -155,20 +172,22 @@ export class ProductController {
     },
   })
   async replaceById(
-    @param.path.number('id') id: number,
+    @param.path.number('id') id: string,
     @requestBody() product: Product,
   ): Promise<void> {
     await this.productRepository.replaceById(id, product);
   }
 
+  @authorize({allowedRoles: ['admin'], voters: [basicAuthorization]})
   @del('/products/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Product DELETE success',
       },
     },
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(@param.path.number('id') id: string): Promise<void> {
     await this.productRepository.deleteById(id);
   }
 }

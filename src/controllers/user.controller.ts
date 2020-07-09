@@ -1,9 +1,14 @@
-// Uncomment these imports to begin using these cool features!
-
-import {authenticate, AuthenticationBindings} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {get, getJsonSchemaRef, post, requestBody} from '@loopback/rest';
+import {
+  get,
+  getJsonSchemaRef,
+  getModelSchemaRef,
+  post,
+  requestBody,
+} from '@loopback/rest';
 import {SecurityBindings, UserProfile} from '@loopback/security';
 import * as _ from 'lodash';
 import {
@@ -14,15 +19,13 @@ import {
 import {User} from '../models/user.model';
 // import {inject} from '@loopback/context';
 import {Credentials, UserRepository} from '../repositories/user.repository';
+import {basicAuthorization} from '../services/basic.authorization';
 import {BcryptHasher} from '../services/hash.password.bcrypt';
 import {JWTService} from '../services/jwt-service';
 import {MyUserService} from '../services/user-service';
 import {validateCredentials} from '../services/validator';
 import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
-import {
-  CredentialsRequestBody,
-  UserProfileSchema,
-} from './specs/user.controller.spec';
+import {CredentialsRequestBody} from './specs/user.controller.spec';
 
 export class UserController {
   constructor(
@@ -78,13 +81,16 @@ export class UserController {
   })
   async login(
     @requestBody(CredentialsRequestBody) credentials: Credentials,
-  ): Promise<{token: string}> {
+  ): Promise<{token: string; user: object}> {
     // make sure user exists and password should be valid
     const user = await this.userService.verifyCredentials(credentials);
     const userProfile = this.userService.convertToUserProfile(user);
     const token = await this.jwtService.generateToken(userProfile);
-    return Promise.resolve({token});
+    return Promise.resolve({token, user: userProfile});
   }
+
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin', 'user'], voters: [basicAuthorization]})
   @get('/users/me', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -92,17 +98,15 @@ export class UserController {
         description: 'The current user profile',
         content: {
           'application/json': {
-            schema: UserProfileSchema,
+            schema: getModelSchemaRef(User),
           },
         },
       },
     },
   })
-  @authenticate('jwt')
-  async me(
-    @inject(AuthenticationBindings.CURRENT_USER)
-    currentUser: UserProfile,
-  ): Promise<UserProfile> {
-    return Promise.resolve(currentUser);
+  async me(): Promise<UserProfile> {
+    const user = await this.userService.getUser(this.user.id);
+    const userProfile = this.userService.convertToUserProfile(user);
+    return userProfile;
   }
 }

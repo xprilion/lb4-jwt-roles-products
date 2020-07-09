@@ -46,11 +46,24 @@ export class MyUserService implements UserService<User, Credentials> {
         ? `${user.firstName} ${user.lastName}`
         : user.lastName;
     }
-    return {
+    const data = {
       id: user.id,
       name: userName,
-      roles: user.roles,
+      role: user.role,
       [securityId]: `${user.id}`,
     };
+    return data;
+  }
+
+  async getUser(token: string): Promise<User> {
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        id: token,
+      },
+    });
+    if (!foundUser) {
+      throw new HttpErrors.NotFound(`user not found`);
+    }
+    return foundUser;
   }
 }
